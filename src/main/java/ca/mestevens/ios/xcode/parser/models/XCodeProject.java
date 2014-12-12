@@ -8,10 +8,16 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import ca.mestevens.ios.xcode.parser.exceptions.FileReferenceDoesNotExistException;
 import ca.mestevens.ios.xcode.parser.exceptions.InvalidObjectFormatException;
 import ca.mestevens.ios.xcode.parser.utils.ObjectParser;
 
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class XCodeProject {
 	
 	public Integer archiveVersion;
@@ -41,6 +47,11 @@ public class XCodeProject {
 	
 	public CommentedIdentifier rootObject;
 	
+	/**
+	 * The constructor to construct a representation of the .pbxproj file of the .xcodeproj file
+	 * @param projectPath A path to your .xcodeproj or .pbxproj file.
+	 * @throws InvalidObjectFormatException If something in the project file isn't formatted correctly.
+	 */
 	public XCodeProject(String projectPath) throws InvalidObjectFormatException {
 		if (projectPath.endsWith(".xcodeproj")) {
 			projectPath.concat("/project.pbxproj");
@@ -267,7 +278,7 @@ public class XCodeProject {
 		return returnString;
 	}
 	
-	public String getSection(String body, String sectionName) {
+	private String getSection(String body, String sectionName) {
 		String endString = "/* End " + sectionName + " section */";
 		int startIndex = body.indexOf("/* Begin " + sectionName + " section */");
 		int endIndex = body.indexOf(endString);
@@ -277,7 +288,7 @@ public class XCodeProject {
 		return body.substring(startIndex, endIndex + endString.length());
 	}
 	
-	public <T> T getObject(Class<T> clazz, String section) throws NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+	private <T> T getObject(Class<T> clazz, String section) throws NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 		if (section == null || section.equals("")) {
 			return null;
 		}
@@ -288,7 +299,7 @@ public class XCodeProject {
 		return object;
 	}
 	
-	public <T> List<T> getList(Class<T> clazz, String section) throws InvalidObjectFormatException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
+	private <T> List<T> getList(Class<T> clazz, String section) throws InvalidObjectFormatException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
 		ObjectParser objectsParser = new ObjectParser(section);
 		String objectString = objectsParser.parseNextObject();
 		List<T> objects = new ArrayList<T>();
@@ -301,10 +312,19 @@ public class XCodeProject {
 		return objects;
 	}
 	
+	/**
+	 * Method to add a file reference to the project file. This will assume a sourceTree of "<group>".
+	 * @param filePath The path to the file you want to add (including the file name).
+	 */
 	public void createFileReference(String filePath) {
 		createFileReference(filePath, "\"<group>\"");
 	}
 	
+	/**
+	 * Method to add a file reference to the project file.
+	 * @param filePath The path to the file you want to add (including the file name).
+	 * @param sourceTree The source tree where the file is located. Usually will be "<group>".
+	 */
 	public void createFileReference(String filePath, String sourceTree) {
 		PBXFileElement fileReference = new PBXFileElement(filePath, sourceTree);
 		if (!this.fileReferences.contains(fileReference)) {
@@ -312,10 +332,21 @@ public class XCodeProject {
 		}
 	}
 	
+	/**
+	 * This will create a build file from the file reference that is specified by the file references file path.
+	 * @param filePath The file path of the file reference.
+	 * @throws FileReferenceDoesNotExistException If there is no file reference for the file path.
+	 */
 	public void createBuildFileFromFileReferencePath(String filePath) throws FileReferenceDoesNotExistException {
 		createBuildFileFromFileReferencePath(filePath, Paths.get(filePath).getFileName().toString());
 	}
 	
+	/**
+	 * This will create a build file from the file reference that is specified by the file references file path.
+	 * @param filePath The file path of the file reference.
+	 * @param buildFileName The name that will be in the comments for the build file.
+	 * @throws FileReferenceDoesNotExistException If there is no file reference for the file path.
+	 */
 	public void createBuildFileFromFileReferencePath(String filePath, String buildFileName) throws FileReferenceDoesNotExistException {
 		for(PBXFileElement fileReference : this.fileReferences) {
 			if (fileReference.getPath().equals(filePath)) {
@@ -330,17 +361,361 @@ public class XCodeProject {
 		throw new FileReferenceDoesNotExistException("No file reference for file at path \"" + filePath + "\" found.");
 	}
 	
+	/**
+	 * This will create an empty group in the project file. It will place the group in the first target's group.
+	 * @param groupName The name of the group.
+	 */
 	public void createGroup(String groupName) {
-		createGroup(groupName, new ArrayList<CommentedIdentifier>());
+		String mainGroup = this.project.getMainGroup().getIdentifier();
+		String firstGroup = mainGroup;
+		for(PBXFileElement group : this.groups) {
+			if (group.getReference().getIdentifier().equals(mainGroup)) {
+				if (group.getChildren().size() > 0) {
+					firstGroup = group.getChildren().get(0).getIdentifier();
+				}
+			}
+		}
+		createGroup(groupName, new ArrayList<CommentedIdentifier>(), firstGroup);
 	}
 	
-	public void createGroup(String groupName, List<CommentedIdentifier> groupChildren) {
-		PBXFileElement group = new PBXFileElement("isa", "name", "sourcetree");
+	/**
+	 * This will create an empty group in the project file.
+	 * @param groupName The name of the group.
+	 * @param parentGroup The base group that the group will be included in.
+	 */
+	public void createGroup(String groupName, String parentGroup) {
+		createGroup(groupName, new ArrayList<CommentedIdentifier>(), parentGroup);
+	}
+	
+	/**
+	 * This will create a group in the project file. There can be multiple groups with the same name, so check before creating a new one.
+	 * @param groupName The name of the group.
+	 * @param groupChildren The identifiers and comments that will be in the group.
+	 * @param parentGroup The base group that the group will be included in.
+	 */
+	public void createGroup(String groupName, List<CommentedIdentifier> groupChildren, String parentGroup) {
+		PBXFileElement group = new PBXFileElement("PBXGroup", groupName, "\"<group>\"");
 		for (CommentedIdentifier child : groupChildren) {
 			group.addChild(child);
 		}
 		//There can be multiple groups of the same name
 		this.groups.add(group);
+		for (PBXFileElement groupElement : this.groups) {
+			if (groupElement.getReference().getIdentifier().equals(parentGroup)) {
+				groupElement.addChild(group.getReference());
+			}
+		}
+	}
+	
+	/**
+	 * Add an apple script build phase to the project.
+	 * @param targetIdentifier The identifier of the target you want to add the build phase to.
+	 * @param buildPhase The object representing the build phase.
+	 */
+	public void addAppleScriptBuildPhase(String targetIdentifier, PBXBuildPhase buildPhase) {
+		addBuildPhaseToTarget(targetIdentifier, buildPhase.getReference());
+		this.appleScriptBuildPhases.add(buildPhase);
+	}
+	
+	/**
+	 * Add a copy files build phase to the project.
+	 * @param targetIdentifier The identifier of the target you want to add the build phase to.
+	 * @param buildPhase The object representing the build phase.
+	 */
+	public void addCopyFilesBuildPhase(String targetIdentifier, PBXBuildPhase buildPhase) {
+		addBuildPhaseToTarget(targetIdentifier, buildPhase.getReference());
+		this.copyFilesBuildPhases.add(buildPhase);
+	}
+	
+	/**
+	 * Add a frameworks build phase to the project.
+	 * @param targetIdentifier The identifier of the target you want to add the build phase to.
+	 * @param buildPhase The object representing the build phase.
+	 */
+	public void addFrameworksBuildPhase(String targetIdentifier, PBXBuildPhase buildPhase) {
+		addBuildPhaseToTarget(targetIdentifier, buildPhase.getReference());
+		this.frameworksBuildPhases.add(buildPhase);
+	}
+	
+	/**
+	 * Add a headers build phase to the project.
+	 * @param targetIdentifier The identifier of the target you want to add the build phase to.
+	 * @param buildPhase The object representing the build phase.
+	 */
+	public void addHeadersBuildPhase(String targetIdentifier, PBXBuildPhase buildPhase) {
+		addBuildPhaseToTarget(targetIdentifier, buildPhase.getReference());
+		this.headersBuildPhases.add(buildPhase);
+	}
+	
+	/**
+	 * Add a resources build phase to the project.
+	 * @param targetIdentifier The identifier of the target you want to add the build phase to.
+	 * @param buildPhase The object representing the build phase.
+	 */
+	public void addResourcesBuildPhase(String targetIdentifier, PBXBuildPhase buildPhase) {
+		addBuildPhaseToTarget(targetIdentifier, buildPhase.getReference());
+		this.resourcesBuildPhases.add(buildPhase);
+	}
+	
+	/**
+	 * Add a shell script build phase to the project.
+	 * @param targetIdentifier The identifier of the target you want to add the build phase to.
+	 * @param buildPhase The object representing the build phase.
+	 */
+	public void addShellScriptBuildPhase(String targetIdentifier, PBXBuildPhase buildPhase) {
+		addBuildPhaseToTarget(targetIdentifier, buildPhase.getReference());
+		this.shellScriptBuildPhases.add(buildPhase);
+	}
+	
+	/**
+	 * Add a sources build phase to the project.
+	 * @param targetIdentifier The identifier of the target you want to add the build phase to.
+	 * @param buildPhase The object representing the build phase.
+	 */
+	public void addSourcesBuildPhase(String targetIdentifier, PBXBuildPhase buildPhase) {
+		addBuildPhaseToTarget(targetIdentifier, buildPhase.getReference());
+		this.sourcesBuildPhases.add(buildPhase);
+	}
+	
+	private void removeBuildPhaseFromTargets(String identifier) {
+		for(PBXTarget target : this.nativeTargets) {
+			for(CommentedIdentifier buildPhase : target.getBuildPhases()) {
+				if (buildPhase.getIdentifier().equals(identifier)) {
+					//this.nativeTargets.set(index, target);
+					target.getBuildPhases().remove(buildPhase);
+					break;
+				}
+			}
+		}
+	}
+	
+	private void addBuildPhaseToTarget(String targetIdentifier, CommentedIdentifier buildPhaseIdentifier) {
+		for(PBXTarget target : this.nativeTargets) {
+			if (target.getReference().getIdentifier().equals(targetIdentifier)) {
+				target.getBuildPhases().add(buildPhaseIdentifier);
+			}
+		}
+	}
+	
+	/**
+	 * Get the apple script build phase for the provided identifier.
+	 * @param identifier The identifier that is used to identify the build phase.
+	 * @return The apple script build phase for the identifier, or null if no build phase was found.
+	 */
+	public PBXBuildPhase getAppleScriptBuildPhaseWithIdentifier(String identifier) {
+		return getBuildPhaseWithIdentifier(this.appleScriptBuildPhases, identifier);
+	}
+	
+	/**
+	 * Get the copy files build phase for the provided identifier.
+	 * @param identifier The identifier that is used to identify the build phase.
+	 * @return The copy files build phase for the identifier, or null if no build phase was found.
+	 */
+	public PBXBuildPhase getCopyFilesBuildPhaseWithIdentifier(String identifier) {
+		return getBuildPhaseWithIdentifier(this.copyFilesBuildPhases, identifier);
+	}
+
+	/**
+	 * Get the frameworks build phase for the provided identifier.
+	 * @param identifier The identifier that is used to identify the build phase.
+	 * @return The frameworks build phase for the identifier, or null if no build phase was found.
+	 */
+	public PBXBuildPhase getFrameworksBuildPhaseWithIdentifier(String identifier) {
+		return getBuildPhaseWithIdentifier(this.frameworksBuildPhases, identifier);
+	}
+
+	/**
+	 * Get the headers build phase for the provided identifier.
+	 * @param identifier The identifier that is used to identify the build phase.
+	 * @return The headers build phase for the identifier, or null if no build phase was found.
+	 */
+	public PBXBuildPhase getHeadersBuildPhaseWithIdentifier(String identifier) {
+		return getBuildPhaseWithIdentifier(this.headersBuildPhases, identifier);
+	}
+
+	/**
+	 * Get the resources build phase for the provided identifier.
+	 * @param identifier The identifier that is used to identify the build phase.
+	 * @return The resources build phase for the identifier, or null if no build phase was found.
+	 */
+	public PBXBuildPhase getResourcesBuildPhaseWithIdentifier(String identifier) {
+		return getBuildPhaseWithIdentifier(this.resourcesBuildPhases, identifier);
+	}
+
+	/**
+	 * Get the shell script build phase for the provided identifier.
+	 * @param identifier The identifier that is used to identify the build phase.
+	 * @return The shell script build phase for the identifier, or null if no build phase was found.
+	 */
+	public PBXBuildPhase getShellScriptBuildPhaseWithIdentifier(String identifier) {
+		return getBuildPhaseWithIdentifier(this.shellScriptBuildPhases, identifier);
+	}
+
+	/**
+	 * Get the sources build phase for the provided identifier.
+	 * @param identifier The identifier that is used to identify the build phase.
+	 * @return The sources build phase for the identifier, or null if no build phase was found.
+	 */
+	public PBXBuildPhase getSourcesBuildPhaseWithIdentifier(String identifier) {
+		return getBuildPhaseWithIdentifier(this.sourcesBuildPhases, identifier);
+	}
+	
+	private PBXBuildPhase getBuildPhaseWithIdentifier(List<PBXBuildPhase> buildPhases, String identifier) {
+		for (PBXBuildPhase buildPhase: buildPhases) {
+			if (buildPhase.getReference().getIdentifier().equals(identifier)) {
+				return buildPhase;
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * Remove the build phase with the provided identifier from the apple scripts build phase section
+	 * @param identifier The identifier that is used to identify the build phase.
+	 */
+	public void removeAppleScriptBuildPhaseWithIdentifier(String identifier) {
+		removeBuildPhaseFromTargets(identifier);
+		for (PBXBuildPhase buildPhase : this.appleScriptBuildPhases) {
+			if (buildPhase.getReference().getIdentifier().equals(identifier)) {
+				this.appleScriptBuildPhases.remove(buildPhase);
+			}
+		}
+	}
+	
+	/**
+	 * Remove the build phase with the provided identifier from the copy files build phase section
+	 * @param identifier The identifier that is used to identify the build phase.
+	 */
+	public void removeCopyFilesBuildPhaseWithIdentifier(String identifier) {
+		removeBuildPhaseFromTargets(identifier);
+		for (PBXBuildPhase buildPhase : this.copyFilesBuildPhases) {
+			if (buildPhase.getReference().getIdentifier().equals(identifier)) {
+				this.copyFilesBuildPhases.remove(buildPhase);
+			}
+		}
+	}
+
+	/**
+	 * Remove the build phase with the provided identifier from the frameworks build phase section
+	 * @param identifier The identifier that is used to identify the build phase.
+	 */
+	public void removeFrameworksBuildPhaseWithIdentifier(String identifier) {
+		removeBuildPhaseFromTargets(identifier);
+		for (PBXBuildPhase buildPhase : this.frameworksBuildPhases) {
+			if (buildPhase.getReference().getIdentifier().equals(identifier)) {
+				this.frameworksBuildPhases.remove(buildPhase);
+			}
+		}
+	}
+
+	/**
+	 * Remove the build phase with the provided identifier from the headers build phase section
+	 * @param identifier The identifier that is used to identify the build phase.
+	 */
+	public void removeHeadersBuildPhaseWithIdentifier(String identifier) {
+		removeBuildPhaseFromTargets(identifier);
+		for (PBXBuildPhase buildPhase : this.headersBuildPhases) {
+			if (buildPhase.getReference().getIdentifier().equals(identifier)) {
+				this.headersBuildPhases.remove(buildPhase);
+			}
+		}
+	}
+
+	/**
+	 * Remove the build phase with the provided identifier from the resources build phase section
+	 * @param identifier The identifier that is used to identify the build phase.
+	 */
+	public void removeResourcesBuildPhaseWithIdentifier(String identifier) {
+		removeBuildPhaseFromTargets(identifier);
+		for (PBXBuildPhase buildPhase : this.resourcesBuildPhases) {
+			if (buildPhase.getReference().getIdentifier().equals(identifier)) {
+				this.resourcesBuildPhases.remove(buildPhase);
+			}
+		}
+	}
+
+	/**
+	 * Remove the build phase with the provided identifier from the shell scripts build phase section
+	 * @param identifier The identifier that is used to identify the build phase.
+	 */
+	public void removeShellScriptBuildPhaseWithIdentifier(String identifier) {
+		removeBuildPhaseFromTargets(identifier);
+		for (PBXBuildPhase buildPhase : this.shellScriptBuildPhases) {
+			if (buildPhase.getReference().getIdentifier().equals(identifier)) {
+				this.shellScriptBuildPhases.remove(buildPhase);
+			}
+		}
+	}
+
+	/**
+	 * Remove the build phase with the provided identifier from the sources build phase section
+	 * @param identifier The identifier that is used to identify the build phase.
+	 */
+	public void removeSourcesBuildPhaseWithIdentifier(String identifier) {
+		removeBuildPhaseFromTargets(identifier);
+		for (PBXBuildPhase buildPhase : this.sourcesBuildPhases) {
+			if (buildPhase.getReference().getIdentifier().equals(identifier)) {
+				this.sourcesBuildPhases.remove(buildPhase);
+			}
+		}
+	}
+	
+	/**
+	 * Adds or updates the value of 'key' to 'value' in the build configuration specified by the identifier.
+	 * @param buildConfigurationIdentifier The identifier for the configuration.
+	 * @param key The key of the build setting you want to add/update.
+	 * @param value The value of the build setting you want to add/update.
+	 */
+	public void setBuildConfigurationProperty(String buildConfigurationIdentifier, String key, String value) {
+		for (XCBuildConfiguration configuration : this.buildConfigurations) {
+			if (configuration.getReference().getIdentifier().equals(buildConfigurationIdentifier)) {
+				configuration.setBuildSetting(key, value);
+			}
+		}
+	}
+	
+	/**
+	 * Adds or updates the value of 'key' to 'value' in the build configuration specified by the identifier.
+	 * @param buildConfigurationIdentifier The identifier for the configuration.
+	 * @param key The key of the build setting you want to add/update.
+	 * @param values The value of the build setting you want to add/update as a list.
+	 */
+	public void setBuildConfigurationProperty(String buildConfigurationIdentifier, String key, List<String> values) {
+		for (XCBuildConfiguration configuration : this.buildConfigurations) {
+			if (configuration.getReference().getIdentifier().equals(buildConfigurationIdentifier)) {
+				configuration.setBuildSetting(key, values);
+			}
+		}
+	}
+	
+	/**
+	 * Get the value for 'key' in the build configuration specified by the identifier.
+	 * @param buildConfigurationIdentifier The identifier for the build configuration.
+	 * @param key The key of the build property you want the value of.
+	 * @return The value for the build configuration property, or null if it doesn't exist.
+	 */
+	public String getBuildConfigurationProperty(String buildConfigurationIdentifier, String key) {
+		for (XCBuildConfiguration configuration : this.buildConfigurations) {
+			if (configuration.getReference().getIdentifier().equals(buildConfigurationIdentifier)) {
+				return configuration.getBuildSetting(key);
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * Get the value for 'key' in the build configuration specified by the identifier as a list.
+	 * @param buildConfigurationIdentifier The identifier for the build configuration.
+	 * @param key The key of the build property you want the value of.
+	 * @return A list of values for the build configuration property, or null if it doesn't exist or isn't a list.
+	 */
+	public List<String> getBuildConfigurationPropertyAsList(String buildConfigurationIdentifier, String key) {
+		for (XCBuildConfiguration configuration : this.buildConfigurations) {
+			if (configuration.getReference().getIdentifier().equals(buildConfigurationIdentifier)) {
+				return configuration.getBuildSettingAsList(key);
+			}
+		}
+		return null;
 	}
 
 }

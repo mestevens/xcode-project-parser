@@ -13,6 +13,7 @@ import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertEquals;
 
+@Test(groups = "automated")
 public class PBXBuildFileTest {
 	
 	private final String testReference = "8A23808419F94F640025EFB1";

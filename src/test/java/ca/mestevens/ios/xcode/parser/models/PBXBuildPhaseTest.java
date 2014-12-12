@@ -10,6 +10,7 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
+@Test(groups = "automated")
 public class PBXBuildPhaseTest {
 	
 	private final String frameworksBuildPhaseObject = "\t\t8A23807B19F94F630025EFB1 /* Frameworks */ = {\n" +

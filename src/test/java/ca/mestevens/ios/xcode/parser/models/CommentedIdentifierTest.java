@@ -7,6 +7,7 @@ import org.testng.annotations.Test;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertEquals;
 
+@Test(groups = "automated")
 public class CommentedIdentifierTest {
 	
 	public final String testIdentifier = "test-id";
@@ -94,7 +95,7 @@ public class CommentedIdentifierTest {
 	}
 	
 	@Test
-	public void testToStringWithIdents() {
+	public void testToStringWithIndents() {
 		CommentedIdentifier identifier = new CommentedIdentifier(testIdentifier, testComment);
 		assertEquals(identifier.toString(2), "\t\t" + testIdentifier + " /* " + testComment + " */");
 	}
