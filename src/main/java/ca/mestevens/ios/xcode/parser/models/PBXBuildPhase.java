@@ -1,6 +1,8 @@
 package ca.mestevens.ios.xcode.parser.models;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -28,6 +30,32 @@ public class PBXBuildPhase implements Comparable<PBXBuildPhase> {
 	private List<String> outputPaths;
 	private String shellPath;
 	private String shellScript;
+	
+	public PBXBuildPhase(String isa, String name, List<CommentedIdentifier> files) {
+		this.reference = new CommentedIdentifier(UUID.randomUUID().toString(), name);
+		this.isa = isa;
+		this.buildActionMask = 2147483647;
+		if (files != null) {
+			this.files = files;
+		} else {
+			this.files = new ArrayList<CommentedIdentifier>();
+		}
+		this.runOnlyForDeploymentPostprocessing = 0;
+	}
+	
+	public PBXBuildPhase(String isa, String name, List<String> inputPaths, List<String> outputPaths, String shellPath, String shellScript) {
+		this(isa, name, null);
+		this.inputPaths = inputPaths;
+		this.outputPaths = outputPaths;
+		this.shellPath = shellPath;
+		this.shellScript = shellScript;
+	}
+	
+	public PBXBuildPhase(String isa, String name, List<CommentedIdentifier> files, String dstPath, Integer dstSubfolderSpec) {
+		this(isa, name, files);
+		this.dstPath = dstPath;
+		this.dstSubfolderSpec = dstSubfolderSpec;
+	}
 	
 	public PBXBuildPhase(String buildPhaseString) throws InvalidObjectFormatException {
 		try {

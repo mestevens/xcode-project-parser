@@ -1,6 +1,5 @@
 package ca.mestevens.ios.xcode.parser.models;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -43,7 +42,7 @@ public class PBXBuildFile implements Comparable<PBXBuildFile> {
 				uuidPart = uuidPart.substring(0, commentStartIndex).trim();
 			}
 			this.reference = new CommentedIdentifier(uuidPart, commentPart);
-			this.settings = new HashMap<String, String>();
+			this.settings = new TreeMap<String, String>();
 			ObjectParser parser = new ObjectParser(buildFileString);
 			parser = parser.getNextNestedObjects();
 			String parserObject = parser.parseNextObject();
@@ -71,8 +70,8 @@ public class PBXBuildFile implements Comparable<PBXBuildFile> {
 	public String toString() {
 		Map<String, String> tempSettings = settings;
 		tempSettings.put("fileRef", fileRef.toString());
-		tempSettings.put("isa", this.isa);
 		String returnString = reference.toString() + " = {";
+		returnString += "isa" + " = " + this.isa + "; ";
 		for(String key : tempSettings.keySet()) {
 			returnString += key + " = " + tempSettings.get(key) + "; ";
 		}

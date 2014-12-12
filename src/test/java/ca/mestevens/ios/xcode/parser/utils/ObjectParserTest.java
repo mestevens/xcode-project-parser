@@ -7,6 +7,7 @@ import org.testng.annotations.Test;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertEquals;
 
+@Test(groups = "automated")
 public class ObjectParserTest {
 	
 	private ObjectParser objectParser;

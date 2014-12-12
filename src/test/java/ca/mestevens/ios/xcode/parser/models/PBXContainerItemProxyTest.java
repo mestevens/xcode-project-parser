@@ -8,6 +8,7 @@ import ca.mestevens.ios.xcode.parser.exceptions.InvalidObjectFormatException;
 
 import static org.testng.Assert.assertEquals;
 
+@Test(groups = "automated")
 public class PBXContainerItemProxyTest {
 	
 	private String testReference = "8A23809819F94F640025EFB1";

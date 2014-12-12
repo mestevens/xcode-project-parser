@@ -1,6 +1,5 @@
 package ca.mestevens.ios.xcode.parser.models;
 
-import java.util.List;
 
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -10,14 +9,13 @@ import ca.mestevens.ios.xcode.parser.exceptions.InvalidObjectFormatException;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertEquals;
 
+@Test(groups = "automated")
 public class PBXFileElementTest {
 	
 	private String testReference = "8A23809119F94F640025EFB1";
 	private String testReferenceComment = "Base";
 	private String testIsa = "PBXFileReference";
-	private String testExplicitFileType = "";
 	private String testLastKnownFileType = "file.xib";
-	private Integer testIncludeInIndex = 0;
 	private String testPath = "Base.lproj/LaunchScreen.xib";
 	private String testSourceTree = "\"<group>\"";
 	private String testName = "Base";
@@ -71,15 +69,6 @@ public class PBXFileElementTest {
 		PBXFileElement fileReference = new PBXFileElement(testFileReferenceObject);
 		assertEquals(fileReference.toString(2), testFileReferenceObject);
 	}
-	
-	/*
-	 * private String testGroupReference = "8A23809B19F94F640025EFB1";
-	private String testGroupReferenceComment = "Supporting Files";
-	private String testGroupIsa = "PBXGroup";
-	private CommentedIdentifier testGroupChild = new CommentedIdentifier("8A23809C19F94F640025EFB1", "Info.plist");
-	private String testGroupName = "\"Supporting Files\"";
-	private String testGroupSourceTree = "\"<group>\"";
-	 */
 	
 	@Test
 	public void testBasicGroup() throws InvalidObjectFormatException {

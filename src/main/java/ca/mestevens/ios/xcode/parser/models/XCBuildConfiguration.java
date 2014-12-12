@@ -1,7 +1,6 @@
 package ca.mestevens.ios.xcode.parser.models;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -152,7 +151,13 @@ public class XCBuildConfiguration implements Comparable<XCBuildConfiguration> {
 				return null;
 			}
 			returnValue = returnValue.substring(1, returnValue.length() - 2);
-			List<String> returnList = Arrays.asList(returnValue.split(","));
+			String[] returnArray = returnValue.split(",");
+			List<String> returnList = new ArrayList<String>();
+			for (String value : returnArray) {
+				if (!value.trim().equals("")) {
+					returnList.add(value.trim());
+				}
+			}
 			return returnList;
 		}
 		return null;
