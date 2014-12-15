@@ -315,30 +315,34 @@ public class XCodeProject {
 	/**
 	 * Method to add a file reference to the project file. This will assume a sourceTree of "<group>".
 	 * @param filePath The path to the file you want to add (including the file name).
+	 * @return The PBXFileElement object representing the new file element.
 	 */
-	public void createFileReference(String filePath) {
-		createFileReference(filePath, "\"<group>\"");
+	public PBXFileElement createFileReference(String filePath) {
+		return createFileReference(filePath, "\"<group>\"");
 	}
 	
 	/**
 	 * Method to add a file reference to the project file.
 	 * @param filePath The path to the file you want to add (including the file name).
 	 * @param sourceTree The source tree where the file is located. Usually will be "<group>".
+	 * @return The PBXFileElement object representing the new file element.
 	 */
-	public void createFileReference(String filePath, String sourceTree) {
+	public PBXFileElement createFileReference(String filePath, String sourceTree) {
 		PBXFileElement fileReference = new PBXFileElement(filePath, sourceTree);
 		if (!this.fileReferences.contains(fileReference)) {
 			this.fileReferences.add(fileReference);
 		}
+		return fileReference;
 	}
 	
 	/**
 	 * This will create a build file from the file reference that is specified by the file references file path.
 	 * @param filePath The file path of the file reference.
 	 * @throws FileReferenceDoesNotExistException If there is no file reference for the file path.
+	 * @return The PBXBuildFile object representing this new build file.
 	 */
-	public void createBuildFileFromFileReferencePath(String filePath) throws FileReferenceDoesNotExistException {
-		createBuildFileFromFileReferencePath(filePath, Paths.get(filePath).getFileName().toString());
+	public PBXBuildFile createBuildFileFromFileReferencePath(String filePath) throws FileReferenceDoesNotExistException {
+		return createBuildFileFromFileReferencePath(filePath, Paths.get(filePath).getFileName().toString());
 	}
 	
 	/**
@@ -346,8 +350,9 @@ public class XCodeProject {
 	 * @param filePath The file path of the file reference.
 	 * @param buildFileName The name that will be in the comments for the build file.
 	 * @throws FileReferenceDoesNotExistException If there is no file reference for the file path.
+	 * @return The PBXBuildFile object representing this new build file.
 	 */
-	public void createBuildFileFromFileReferencePath(String filePath, String buildFileName) throws FileReferenceDoesNotExistException {
+	public PBXBuildFile createBuildFileFromFileReferencePath(String filePath, String buildFileName) throws FileReferenceDoesNotExistException {
 		for(PBXFileElement fileReference : this.fileReferences) {
 			if (fileReference.getPath().equals(filePath)) {
 				String reference = fileReference.getReference().getIdentifier();
@@ -355,7 +360,7 @@ public class XCodeProject {
 				if (!this.buildFiles.contains(buildFile)) {
 					this.buildFiles.add(buildFile);
 				}
-				return;
+				return buildFile;
 			}
 		}
 		throw new FileReferenceDoesNotExistException("No file reference for file at path \"" + filePath + "\" found.");
@@ -364,8 +369,9 @@ public class XCodeProject {
 	/**
 	 * This will create an empty group in the project file. It will place the group in the first target's group.
 	 * @param groupName The name of the group.
+	 * @return The PBXFileElement object representing this new group.
 	 */
-	public void createGroup(String groupName) {
+	public PBXFileElement createGroup(String groupName) {
 		String mainGroup = this.project.getMainGroup().getIdentifier();
 		String firstGroup = mainGroup;
 		for(PBXFileElement group : this.groups) {
@@ -375,16 +381,17 @@ public class XCodeProject {
 				}
 			}
 		}
-		createGroup(groupName, new ArrayList<CommentedIdentifier>(), firstGroup);
+		return createGroup(groupName, new ArrayList<CommentedIdentifier>(), firstGroup);
 	}
 	
 	/**
 	 * This will create an empty group in the project file.
 	 * @param groupName The name of the group.
 	 * @param parentGroup The base group that the group will be included in.
+	 * @return The PBXFileElement object representing this new group.
 	 */
-	public void createGroup(String groupName, String parentGroup) {
-		createGroup(groupName, new ArrayList<CommentedIdentifier>(), parentGroup);
+	public PBXFileElement createGroup(String groupName, String parentGroup) {
+		return createGroup(groupName, new ArrayList<CommentedIdentifier>(), parentGroup);
 	}
 	
 	/**
@@ -392,8 +399,9 @@ public class XCodeProject {
 	 * @param groupName The name of the group.
 	 * @param groupChildren The identifiers and comments that will be in the group.
 	 * @param parentGroup The base group that the group will be included in.
+	 * @return The PBXFileElement object representing this new group.
 	 */
-	public void createGroup(String groupName, List<CommentedIdentifier> groupChildren, String parentGroup) {
+	public PBXFileElement createGroup(String groupName, List<CommentedIdentifier> groupChildren, String parentGroup) {
 		PBXFileElement group = new PBXFileElement("PBXGroup", groupName, "\"<group>\"");
 		for (CommentedIdentifier child : groupChildren) {
 			group.addChild(child);
@@ -405,6 +413,7 @@ public class XCodeProject {
 				groupElement.addChild(group.getReference());
 			}
 		}
+		return group;
 	}
 	
 	/**
@@ -713,6 +722,160 @@ public class XCodeProject {
 		for (XCBuildConfiguration configuration : this.buildConfigurations) {
 			if (configuration.getReference().getIdentifier().equals(buildConfigurationIdentifier)) {
 				return configuration.getBuildSettingAsList(key);
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * Gets the group with a matching identifier from the PBXGroup section.
+	 * @param identifier The identifier of the group.
+	 * @return The group that matches the identifier, or null if none is found.
+	 */
+	public PBXFileElement getGroupWithIdentifier(String identifier) {
+		for (PBXFileElement group : this.groups) {
+			if (group.getReference() != null && group.getReference().getIdentifier().equals(identifier)) {
+				return group;
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * Gets the variant group with a matching identifier from the PBXVariantGroup section.
+	 * @param identifier The identifier of the variant group.
+	 * @return The variant group that matches the identifier, or null if none is found.
+	 */
+	public PBXFileElement getVariantGroupWithIdentifier(String identifier) {
+		for (PBXFileElement variantGroup : this.variantGroups) {
+			if (variantGroup.getReference() != null && variantGroup.getReference().getIdentifier().equals(identifier)) {
+				return variantGroup;
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * Gets the build file with a matching identifier from the PBXBuildFile section.
+	 * @param identifier The identifier of the build file.
+	 * @return The build file that matches the identifier, or null if none is found.
+	 */
+	public PBXBuildFile getBuildFileWithIdentifier(String identifier) {
+		for (PBXBuildFile buildFile : this.buildFiles) {
+			if (buildFile.getReference() != null && buildFile.getReference().getIdentifier().equals(identifier)) {
+				return buildFile;
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * Gets the build file with a matching file reference from the PBXBuildFile section.
+	 * @param fileRef The file reference of the build file.
+	 * @return The build file that matches the file reference, or null if none is found.
+	 */
+	public PBXBuildFile getBuildFileWithFileRef(String fileRef) {
+		for (PBXBuildFile buildFile : this.buildFiles) {
+			if (buildFile.getFileRef() != null && buildFile.getFileRef().getIdentifier().equals(fileRef)) {
+				return buildFile;
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * Gets the build file that matches the file reference with the specified path.
+	 * @param fileRefPath The path of the file reference that the build file references.
+	 * @return The build file, or null if none is found.
+	 */
+	public PBXBuildFile getBuildFileWithFileRefPath(String fileRefPath) {
+		for (PBXFileElement fileReference : this.fileReferences) {
+			if (fileReference.getPath() != null && fileReference.getPath().equals(fileRefPath)) {
+				return getBuildFileWithFileRef(fileReference.getReference().getIdentifier());
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * Gets the file references that matches the path in the PBXFileReference section.
+	 * @param fileRefPath The path of the file reference.
+	 * @return The file reference, or null if none is found.
+	 */
+	public PBXFileElement getFileReferenceWithPath(String fileRefPath) {
+		for (PBXFileElement fileReference : this.fileReferences) {
+			if (fileReference.getPath() != null && fileReference.getPath().equals(fileRefPath)) {
+				return fileReference;
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * Gets the native target with a matching identifier from the PBXNativeTarget section.
+	 * @param identifier The identifier of the native target.
+	 * @return The native target, or null if none is found.
+	 */
+	public PBXTarget getNativeTargetWithIdentifier(String identifier) {
+		for (PBXTarget nativeTarget : this.nativeTargets) {
+			if (nativeTarget.getReference() != null && nativeTarget.getReference().getIdentifier().equals(identifier)) {
+				return nativeTarget;
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * Gets the legacy taget with a matching identifier from the PBXLegacyTarget section.
+	 * @param identifier The identifier of the legacy target.
+	 * @return The legacy target, or null if none is found.
+	 */
+	public PBXTarget getLegacyTargetWithIdentifier(String identifier) {
+		for (PBXTarget legacyTarget : this.legacyTargets) {
+			if (legacyTarget.getReference() != null && legacyTarget.getReference().getIdentifier().equals(identifier)) {
+				return legacyTarget;
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * Gets the aggregate target with a matching identifier from the PBXAggregateTarget section.
+	 * @param identifier The identifier of the aggregate target.
+	 * @return The aggregate target, or null if none is found.
+	 */
+	public PBXTarget getAggregateTargetWithIdentifier(String identifier) {
+		for (PBXTarget aggregateTarget : this.aggregateTargets) {
+			if (aggregateTarget.getReference() != null && aggregateTarget.getReference().getIdentifier().equals(identifier)) {
+				return aggregateTarget;
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * Gets the build configuration with a matching identifier from the XCBuildConfiguration section.
+	 * @param identifier The identifier of the build configuration.
+	 * @return The build configuration, or null if none is found.
+	 */
+	public XCBuildConfiguration getBuildConfigurationWithIdentifier(String identifier) {
+		for (XCBuildConfiguration buildConfiguration : this.buildConfigurations) {
+			if (buildConfiguration.getReference() != null && buildConfiguration.getReference().getIdentifier().equals(identifier)) {
+				return buildConfiguration;
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * Gets the configuration list with a matching identifier from the XCConfigurationList section.
+	 * @param identifier The identifier of the configuration list.
+	 * @return The configuration list, or null if none is found.
+	 */
+	public XCConfigurationList getConfigurationListWithIdentifier(String identifier) {
+		for (XCConfigurationList configurationList : this.configurationLists) {
+			if (configurationList.getReference() != null && configurationList.getReference().getIdentifier().equals(identifier)) {
+				return configurationList;
 			}
 		}
 		return null;
