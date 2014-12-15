@@ -39,6 +39,7 @@ public class PBXFileElement implements Comparable<PBXFileElement> {
 		this.name = path.getFileName().toString();
 		this.reference = new CommentedIdentifier(UUID.randomUUID().toString(), this.name);
 		this.isa = "PBXFileReference";
+		this.path = path.toString();
 		this.sourceTree = sourceTree;
 	}
 	
