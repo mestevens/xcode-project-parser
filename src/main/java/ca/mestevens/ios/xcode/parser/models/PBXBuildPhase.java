@@ -20,6 +20,7 @@ public class PBXBuildPhase implements Comparable<PBXBuildPhase> {
 	private Integer buildActionMask;
 	private List<CommentedIdentifier> files;
 	private Integer runOnlyForDeploymentPostprocessing;
+	private String name;
 	
 	//PBXCopyFilesBuildPhase
 	private String dstPath;
@@ -34,6 +35,7 @@ public class PBXBuildPhase implements Comparable<PBXBuildPhase> {
 	public PBXBuildPhase(String isa, String name, List<CommentedIdentifier> files) {
 		this.reference = new CommentedIdentifier(UUID.randomUUID().toString(), name);
 		this.isa = isa;
+		this.name = name;
 		this.buildActionMask = 2147483647;
 		if (files != null) {
 			this.files = files;
@@ -106,6 +108,8 @@ public class PBXBuildPhase implements Comparable<PBXBuildPhase> {
 					this.shellPath = value;
 				} else if (key.equals("shellScript")) {
 					this.shellScript = value;
+				} else if (key.equals("name")) {
+					this.name = value;
 				}
 				parserObject = parser.parseNextObject();
 			}
@@ -144,6 +148,9 @@ public class PBXBuildPhase implements Comparable<PBXBuildPhase> {
 				returnString += tabString + "\t\t" + inputPath + ",\n";
 			}
 			returnString += tabString + "\t);\n";
+		}
+		if (this.name != null) {
+			returnString += tabString + "\tname = " + this.name + ";\n";
 		}
 		if (this.outputPaths != null) {
 			returnString += tabString + "\toutputPaths = (\n";
