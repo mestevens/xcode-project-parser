@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>ca.mestevens.ios</groupId>
 	<artifactId>xcode-project-parser</artifactId>
-	<version>0.0.2-SNAPSHOT</version>
+	<version>0.0.2</version>
 	<name>Xcode Project Parser</name>
 	<description>A tool used to read/edit the .pbxproj of an .xcodeproj file</description>
 	<url>https://github.com/mestevens/xcode-project-parser</url>
