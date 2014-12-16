@@ -1,7 +1,7 @@
 # xcode-project-parser
 
 ## Latest Version
-0.0.1
+0.0.3
 
 ## Description
 
@@ -34,5 +34,9 @@ When you are done with the project, you need to write it back to a file (which a
 
 ## Release Notes:
 
+* 0.0.3
+	* Bug fixes
+* 0.0.2
+	* Bug fixes
 * 0.0.1
 	* Initial release

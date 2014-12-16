@@ -150,7 +150,7 @@ public class XCBuildConfiguration implements Comparable<XCBuildConfiguration> {
 			if (!returnValue.startsWith("(") || !returnValue.endsWith(")")) {
 				return null;
 			}
-			returnValue = returnValue.substring(1, returnValue.length() - 2);
+			returnValue = returnValue.substring(1, returnValue.length() - 1);
 			String[] returnArray = returnValue.split(",");
 			List<String> returnList = new ArrayList<String>();
 			for (String value : returnArray) {

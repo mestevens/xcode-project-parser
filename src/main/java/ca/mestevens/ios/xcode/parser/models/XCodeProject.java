@@ -772,29 +772,30 @@ public class XCodeProject {
 	/**
 	 * Gets the build file with a matching file reference from the PBXBuildFile section.
 	 * @param fileRef The file reference of the build file.
-	 * @return The build file that matches the file reference, or null if none is found.
+	 * @return The list of build files that matches the file reference, or an empty list if none are found.
 	 */
-	public PBXBuildFile getBuildFileWithFileRef(String fileRef) {
+	public List<PBXBuildFile> getBuildFileWithFileRef(String fileRef) {
+		List<PBXBuildFile> buildFiles = new ArrayList<PBXBuildFile>();
 		for (PBXBuildFile buildFile : this.buildFiles) {
 			if (buildFile.getFileRef() != null && buildFile.getFileRef().getIdentifier().equals(fileRef)) {
-				return buildFile;
+				buildFiles.add(buildFile);
 			}
 		}
-		return null;
+		return buildFiles;
 	}
 	
 	/**
 	 * Gets the build file that matches the file reference with the specified path.
 	 * @param fileRefPath The path of the file reference that the build file references.
-	 * @return The build file, or null if none is found.
+	 * @return The list of build files that match the file path, or an empty list if none are found.
 	 */
-	public PBXBuildFile getBuildFileWithFileRefPath(String fileRefPath) {
+	public List<PBXBuildFile> getBuildFileWithFileRefPath(String fileRefPath) {
 		for (PBXFileElement fileReference : this.fileReferences) {
 			if (fileReference.getPath() != null && fileReference.getPath().equals(fileRefPath)) {
 				return getBuildFileWithFileRef(fileReference.getReference().getIdentifier());
 			}
 		}
-		return null;
+		return new ArrayList<PBXBuildFile>();
 	}
 	
 	/**
