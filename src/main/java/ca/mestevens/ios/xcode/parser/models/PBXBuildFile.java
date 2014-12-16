@@ -51,13 +51,35 @@ public class PBXBuildFile implements Comparable<PBXBuildFile> {
 				parserObject = parserObject.substring(0, parserObject.length() - 1);
 				String[] splitObject = parserObject.split("=");
 				String key = splitObject[0].trim();
-				String value = splitObject[1].trim();
+				String value = "";
+				for (int i = 1; i < splitObject.length; i++) {
+					if (i > 1) {
+						value += "=";
+					}
+					value += splitObject[i];
+				}
+				value = value.trim();
 				if (key.equals("isa")) {
 					this.isa = value;
 				} else if (key.equals("fileRef")) {
 					this.fileRef = parser.getCommentedIdentifier(value);
-				} else {
-					settings.put(key, value);
+				} else if (key.equals("settings")) {
+					//Remove the surrounding { }
+					value = value.substring(1, value.length() - 1).trim();
+					String[] splitValues = value.split(";");
+					for(String splitValueObject : splitValues) {
+						String[] splitValueSplit = splitValueObject.split("=");
+						String splitValueKey = splitValueSplit[0].trim();
+						String splitValueValue = "";
+						for (int i = 1; i < splitValueSplit.length; i++) {
+							if (i > 1) {
+								splitValueValue += "=";
+							}
+							splitValueValue += splitValueSplit[i];
+						}
+						splitValueValue = splitValueValue.trim();
+						settings.put(splitValueKey, splitValueValue);
+					}
 				}
 				parserObject = parser.parseNextObject();
 			}
@@ -68,12 +90,15 @@ public class PBXBuildFile implements Comparable<PBXBuildFile> {
 	
 	@Override
 	public String toString() {
-		Map<String, String> tempSettings = settings;
-		tempSettings.put("fileRef", fileRef.toString());
 		String returnString = reference.toString() + " = {";
 		returnString += "isa" + " = " + this.isa + "; ";
-		for(String key : tempSettings.keySet()) {
-			returnString += key + " = " + tempSettings.get(key) + "; ";
+		returnString += "fileRef" + " = " + this.fileRef.toString() + "; ";
+		if (this.settings != null && this.settings.size() > 0) {
+			returnString += "settings = {";
+			for (String key : this.settings.keySet()) {
+				returnString += key + " = " + this.settings.get(key) + "; ";
+			}
+			returnString += "}; ";
 		}
 		returnString += "};";
 		return returnString;
@@ -92,7 +117,7 @@ public class PBXBuildFile implements Comparable<PBXBuildFile> {
 	public boolean equals(Object o) {
 		if (o instanceof PBXBuildFile) {
 			PBXBuildFile oBuildFile = (PBXBuildFile)o;
-			return oBuildFile.getFileRef().equals(this.fileRef);
+			return oBuildFile.getFileRef().equals(this.fileRef) && oBuildFile.getReference().getComment().equals(this.reference.getComment());
 		}
 		return false;
 	}
