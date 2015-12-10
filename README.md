@@ -1,5 +1,7 @@
 # xcode-project-parser
 
+[![Join the chat at https://gitter.im/mestevens/xcode-project-parser](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/mestevens/xcode-project-parser?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 ## Latest Version
 0.0.3
 
